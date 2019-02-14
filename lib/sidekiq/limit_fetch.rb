@@ -34,13 +34,19 @@ module Sidekiq::LimitFetch
 
   def redis_retryable
     yield
-  rescue Redis::BaseConnectionError, IO::EAGAINWaitReadable, Redis::TimeoutError => error
+  rescue Redis::BaseConnectionError => error
     if error.message =~ /^LOADING/
       sleep TIMEOUT
       retry
     else
       raise
     end
+  rescue IO::EAGAINWaitReadable
+    sleep TIMEOUT
+    retry
+  rescue Redis::TimeoutError
+    sleep TIMEOUT
+    retry
   end
 
   private
